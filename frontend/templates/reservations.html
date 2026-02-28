@@ -8,7 +8,8 @@
 </div>
 
 <div class="search-bar">
-    <select class="form-control" style="max-width:200px" onchange="loadReservations(this.value)">
+    <select id="reservation-filter" class="form-control" style="max-width:200px" onchange="loadReservations(this.value)">
+        <option value="active" data-i18n="active_reservations">Aktivne</option>
         <option value="" data-i18n="all_reservations">Sve</option>
         <option value="waiting" data-i18n="waiting">Čekaju</option>
         <option value="notified" data-i18n="notified">Obavešteni</option>

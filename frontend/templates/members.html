@@ -38,6 +38,10 @@
         <form onsubmit="saveNewMember(event)">
             <div class="form-row">
                 <div class="form-group">
+                    <label data-i18n="member_number">Redni broj člana</label>
+                    <input type="number" id="new-member-number" class="form-control" min="0" max="9999" required>
+                </div>
+                <div class="form-group">
                     <label data-i18n="first_name">Ime</label>
                     <input type="text" id="new-member-fname" class="form-control" required>
                 </div>
@@ -76,6 +80,12 @@
                     <input type="text" id="new-member-address" class="form-control">
                 </div>
             </div>
+            <div class="form-group">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                    <input type="checkbox" id="new-member-notifications" checked>
+                    <span data-i18n="allow_notifications">Dozvoli obaveštenja</span>
+                </label>
+            </div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-secondary" onclick="closeModal('new-member-modal')" data-i18n="cancel">Otkaži</button>
                 <button type="submit" class="btn btn-primary" data-i18n="register">Registruj</button>
@@ -85,54 +95,107 @@
 </div>
 
 <!-- Member Detail Modal -->
-<div class="modal-overlay" id="member-detail-modal">
-    <div class="modal modal-wide">
+<div class="modal-overlay top-align" id="member-detail-modal">
+    <div class="modal modal-xl">
         <input type="hidden" id="detail-member-id">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+
+        <div class="detail-header">
             <div>
                 <h2 id="detail-member-name">-</h2>
-                <span style="color:var(--text-secondary);font-size:14px" id="detail-member-number">-</span>
+                <div class="detail-header-sub">
+                    <span data-i18n="member_number_title">Broj člana:</span>
+                    <strong id="detail-member-number" style="margin-left:4px">-</strong>
+                </div>
             </div>
             <span id="detail-member-status"></span>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;font-size:14px">
-            <div><strong data-i18n="member_type_title">Tip:</strong> <span id="detail-member-type">-</span></div>
-            <div><strong data-i18n="date_of_birth">Datum rođenja:</strong> <span id="detail-member-dob">-</span></div>
-            <div><strong data-i18n="email_title">Email:</strong> <span id="detail-member-email">-</span></div>
-            <div><strong data-i18n="phone_title">Telefon:</strong> <span id="detail-member-phone">-</span></div>
-            <div><strong data-i18n="address_title">Adresa:</strong> <span id="detail-member-address">-</span></div>
+        <div class="detail-grid detail-grid-2col">
+            <div class="detail-cell">
+                <div class="detail-cell-label" data-i18n="member_type_title">Tip člana</div>
+                <div class="detail-cell-value" id="detail-member-type">-</div>
+            </div>
+            <div class="detail-cell">
+                <div class="detail-cell-label" data-i18n="date_of_birth">Datum rođenja</div>
+                <div class="detail-cell-value" id="detail-member-dob">-</div>
+            </div>
+            <div class="detail-cell">
+                <div class="detail-cell-label" data-i18n="email_title">Email</div>
+                <div class="detail-cell-value" id="detail-member-email">-</div>
+            </div>
+            <div class="detail-cell">
+                <div class="detail-cell-label" data-i18n="phone_title">Telefon</div>
+                <div class="detail-cell-value" id="detail-member-phone">-</div>
+            </div>
+            <div class="detail-cell">
+                <div class="detail-cell-label" data-i18n="address_title">Adresa</div>
+                <div class="detail-cell-value" id="detail-member-address">-</div>
+            </div>
+            <div class="detail-cell">
+                <div class="detail-cell-label" data-i18n="allow_notifications">Obaveštenja</div>
+                <div class="detail-cell-value">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:default">
+                        <input type="checkbox" id="detail-member-notifications" disabled>
+                        <span data-i18n="allow_notifications">Dozvoli obaveštenja</span>
+                    </label>
+                </div>
+            </div>
         </div>
 
         <!-- Tabs -->
-        <div class="tabs">
-            <button class="tab active" onclick="document.querySelectorAll('.member-tab').forEach(t=>t.classList.remove('active'));document.getElementById('mt-loans').classList.add('active');this.parentElement.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));this.classList.add('active')" data-i18n="loans">Pozajmice</button>
-            <button class="tab" onclick="document.querySelectorAll('.member-tab').forEach(t=>t.classList.remove('active'));document.getElementById('mt-memberships').classList.add('active');this.parentElement.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));this.classList.add('active')" data-i18n="memberships">Članarine</button>
+        <div class="tabs detail-tabs">
+            <button class="tab active" onclick="switchMemberTab('mt-loans', this)" data-i18n="active_loans">Aktivne pozajmice</button>
+            <button class="tab" onclick="switchMemberTab('mt-memberships', this)" data-i18n="memberships">Članarine</button>
+            <button class="tab" onclick="switchMemberTab('mt-archive', this)" data-i18n="archive">Arhiva</button>
         </div>
 
         <div class="member-tab active" id="mt-loans">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-                <h3 style="font-size:14px" data-i18n="loans">Pozajmice</h3>
-            </div>
             <div class="table-container">
                 <table>
                     <thead>
-                        <tr><th data-i18n="book_title">Knjiga</th><th data-i18n="inventory_number">Inv. broj</th><th data-i18n="due_date">Rok</th><th data-i18n="status_title">Status</th><th data-i18n="actions">Akcije</th></tr>
+                        <tr>
+                            <th data-i18n="book_title">Knjiga</th>
+                            <th data-i18n="inventory_number">Inv. broj</th>
+                            <th data-i18n="due_date">Rok vraćanja</th>
+                            <th data-i18n="status_title">Status</th>
+                            <th data-i18n="actions">Akcije</th>
+                        </tr>
                     </thead>
                     <tbody id="member-loans-tbody"></tbody>
                 </table>
             </div>
         </div>
 
+        <div class="member-tab" id="mt-archive" style="display:none">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th data-i18n="book_title">Knjiga</th>
+                            <th data-i18n="inventory_number">Inv. broj</th>
+                            <th data-i18n="loaned_at">Datum uzimanja</th>
+                            <th data-i18n="returned_at">Datum vraćanja</th>
+                            <th data-i18n="status_title">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="member-archive-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
         <div class="member-tab" id="mt-memberships" style="display:none">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-                <h3 style="font-size:14px" data-i18n="memberships">Članarine</h3>
-                <button class="btn btn-primary btn-sm" onclick="openModal('membership-modal')" data-i18n="add_payment">+ Uplata</button>
+            <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+                <button class="btn btn-primary btn-sm" onclick="openMembershipModal()" data-i18n="add_payment">+ Uplata</button>
             </div>
             <div class="table-container">
                 <table>
                     <thead>
-                        <tr><th data-i18n="year">Godina</th><th data-i18n="amount">Iznos</th><th data-i18n="payment_date">Datum uplate</th><th data-i18n="valid_until">Važi do</th></tr>
+                        <tr>
+                            <th data-i18n="amount">Iznos</th>
+                            <th data-i18n="payment_date">Datum uplate</th>
+                            <th data-i18n="valid_from">Važi od</th>
+                            <th data-i18n="valid_until">Važi do</th>
+                        </tr>
                     </thead>
                     <tbody id="member-memberships-tbody"></tbody>
                 </table>
@@ -141,7 +204,73 @@
 
         <div class="modal-actions">
             <button class="btn btn-secondary" onclick="closeModal('member-detail-modal')" data-i18n="close">Zatvori</button>
+            <button class="btn btn-primary" onclick="openEditMemberModal()" data-i18n="edit_member">Izmeni</button>
         </div>
+    </div>
+</div>
+
+<!-- Edit Member Modal -->
+<div class="modal-overlay" id="edit-member-modal">
+    <div class="modal">
+        <h2 data-i18n="edit_member_title">Izmeni člana</h2>
+        <form onsubmit="saveEditMember(event)">
+            <input type="hidden" id="edit-member-id">
+            <div class="form-row">
+                <div class="form-group">
+                    <label data-i18n="member_number">Redni broj člana</label>
+                    <input type="number" id="edit-member-number" class="form-control" min="0" max="9999" required>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="first_name">Ime</label>
+                    <input type="text" id="edit-member-fname" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="last_name">Prezime</label>
+                    <input type="text" id="edit-member-lname" class="form-control" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label data-i18n="date_of_birth">Datum rođenja</label>
+                    <input type="date" id="edit-member-dob" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label data-i18n="member_type_title">Tip člana</label>
+                    <select id="edit-member-type" class="form-control">
+                        <option value="odrasli" data-i18n="odrasli">Odrasli</option>
+                        <option value="djak" data-i18n="djak">Đak</option>
+                        <option value="student" data-i18n="student">Student</option>
+                        <option value="penzioner" data-i18n="penzioner">Penzioner</option>
+                        <option value="institucija" data-i18n="institucija">Institucija</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label data-i18n="email_title">Email</label>
+                <input type="email" id="edit-member-email" class="form-control">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label data-i18n="phone_title">Telefon</label>
+                    <input type="text" id="edit-member-phone" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label data-i18n="address_title">Adresa</label>
+                    <input type="text" id="edit-member-address" class="form-control">
+                </div>
+            </div>
+            <div class="form-group">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                    <input type="checkbox" id="edit-member-notifications">
+                    <span data-i18n="allow_notifications">Dozvoli obaveštenja</span>
+                </label>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-danger" onclick="deleteMember()" data-i18n="delete_member" style="margin-right:auto">Obriši člana</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('edit-member-modal')" data-i18n="cancel">Otkaži</button>
+                <button type="submit" class="btn btn-primary" data-i18n="save">Sačuvaj</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -152,17 +281,23 @@
         <form onsubmit="saveMembership(event)">
             <div class="form-row">
                 <div class="form-group">
-                    <label data-i18n="year">Godina</label>
-                    <input type="number" id="membership-year" class="form-control" value="2026" required>
+                    <label data-i18n="payment_date">Datum uplate</label>
+                    <input type="date" id="membership-paid-at" class="form-control" required oninput="calcMembershipDates()">
                 </div>
                 <div class="form-group">
                     <label data-i18n="amount_currency">Iznos (RSD)</label>
-                    <input type="number" id="membership-amount" class="form-control" step="0.01" required>
+                    <input type="number" id="membership-amount" class="form-control" step="0.01" min="0" required>
                 </div>
             </div>
-            <div class="form-group">
-                <label data-i18n="payment_date">Datum uplate</label>
-                <input type="date" id="membership-paid-at" class="form-control" required>
+            <div class="form-row">
+                <div class="form-group">
+                    <label data-i18n="valid_from">Važi od</label>
+                    <input type="date" id="membership-valid-from" class="form-control" readonly style="background:var(--bg-secondary);cursor:default">
+                </div>
+                <div class="form-group">
+                    <label data-i18n="valid_until">Važi do</label>
+                    <input type="date" id="membership-valid-until" class="form-control" readonly style="background:var(--bg-secondary);cursor:default">
+                </div>
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-secondary" onclick="closeModal('membership-modal')" data-i18n="cancel">Otkaži</button>
@@ -180,6 +315,13 @@ document.querySelectorAll('.member-tab').forEach(t => {
     });
     observer.observe(t, { attributes: true, attributeFilter: ['class'] });
 });
+
+function switchMemberTab(tabId, btn) {
+    document.querySelectorAll('.member-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    btn.closest('.tabs').querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+}
 </script>
 {% endblock %}
 

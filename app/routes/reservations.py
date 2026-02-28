@@ -103,10 +103,11 @@ def cancel_reservation(reservation_id: int,
     if reservation.status in ("fulfilled", "cancelled"):
         raise HTTPException(status_code=400, detail="Rezervacija je već završena")
 
+    was_notified = reservation.status == "notified"
     reservation.status = "cancelled"
 
     # If copy was reserved for this, make it available
-    if reservation.status == "notified":
+    if was_notified:
         copies = db.query(BookCopy).filter(
             BookCopy.book_id == reservation.book_id,
             BookCopy.status == "reserved",

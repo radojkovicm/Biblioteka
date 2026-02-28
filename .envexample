@@ -1,0 +1,47 @@
+# Database Configuration
+# SQLite example: sqlite:///./biblioteka.db (default - works out of the box)
+# PostgreSQL example: postgresql://user:password@localhost/biblioteka (only if using PostgreSQL)
+DATABASE_URL="sqlite:///./biblioteka.db"
+
+# JWT Security - REQUIRED: Generate a strong random string
+# Generate with: openssl rand -hex 32 (Linux/macOS) or Python: python -c "import secrets; print(secrets.token_hex(32))"
+# Example: 3a7f9e2b1c4d6a8f5e9c2b7a1d4e6f8a0c3b5e7f9a1c3d5e7f9a0c2b4d6e8
+JWT_SECRET_KEY=your-generated-secret-key-here-min-32-characters
+
+# JWT Settings
+# Algorithm for encoding tokens
+JWT_ALGORITHM=HS256
+# Token expiration time in minutes (should match SESSION_TIMEOUT_MINUTES)
+JWT_EXPIRATION_MINUTES=30
+
+# Session Management
+# User session timeout in minutes (logout if inactive)
+SESSION_TIMEOUT_MINUTES=30
+
+# Server Settings
+# Development mode (set to False in production)
+DEBUG=False
+# Server host (use localhost for local development, 0.0.0.0 for production)
+HOST=localhost
+# Server port (default 8000, change if port is already in use)
+PORT=8000
+
+# Email Notifications (optional - leave empty to disable)
+# SMTP server address (e.g., smtp.gmail.com, smtp.office365.com)
+EMAIL_SMTP_HOST=smtp.gmail.com
+# SMTP port (usually 587 for TLS or 465 for SSL)
+EMAIL_SMTP_PORT=587
+# Email account username
+EMAIL_SMTP_USER=your-email@gmail.com
+# Email account password or app-specific password
+EMAIL_SMTP_PASSWORD=your-app-password-here
+# Display name for sent emails
+EMAIL_SENDER_NAME="Library Notifications"
+# Enable/disable email notifications
+EMAIL_ENABLED=False
+
+# Library Settings
+# Your library name (displayed throughout the application)
+LIBRARY_NAME="radojkovicm Library"
+
+

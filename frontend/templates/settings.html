@@ -8,9 +8,11 @@
 
 <div class="tabs">
     <button class="tab active" onclick="switchSettingsTab('general')" data-i18n="general">General</button>
+    <button class="tab" onclick="switchSettingsTab('permissions')" data-i18n="permissions">Permissions</button>
     <button class="tab" onclick="switchSettingsTab('email')" data-i18n="email_settings">Email</button>
     <button class="tab" onclick="switchSettingsTab('prices')" data-i18n="pricing">Pricing</button>
     <button class="tab" onclick="switchSettingsTab('staff')" data-i18n="users">Users</button>
+    <button class="tab" onclick="switchSettingsTab('books')" data-i18n="books">Books</button>
     <button class="tab" onclick="switchSettingsTab('import')" data-i18n="import_export">Import/Export</button>
     <button class="tab" onclick="switchSettingsTab('backup')" data-i18n="backup">Backup</button>
 </div>
@@ -55,7 +57,67 @@
             <input type="file" id="logo-upload" accept="image/*" class="form-control" style="padding:6px">
             <button class="btn btn-secondary btn-sm" onclick="uploadLogo()" style="margin-top:8px" data-i18n="save_logo">Save Logo</button>
         </div>
-        <button class="btn btn-primary" onclick="saveGeneralSettings()" style="margin-top:8px" data-i18n="save">Save</button>
+        <div class="form-group" style="margin-top:16px">
+            <label data-i18n="membership_type_label">Trajanje članarine</label>
+            <div style="margin-top:10px;display:flex;flex-direction:column;gap:12px">
+                <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+                    <input type="radio" name="membership-type" id="membership-type-calendar" value="calendar" style="margin-top:3px">
+                    <div>
+                        <strong data-i18n="membership_calendar">Kalendarska godina</strong>
+                        <div style="font-size:12px;color:var(--text-secondary);margin-top:2px" data-i18n="membership_calendar_desc">Važi do 31. decembra iste godine (npr. od 4. februara do 31. decembra)</div>
+                    </div>
+                </label>
+                <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+                    <input type="radio" name="membership-type" id="membership-type-rolling" value="rolling" style="margin-top:3px">
+                    <div>
+                        <strong data-i18n="membership_rolling">Pokretna godina (12 meseci)</strong>
+                        <div style="font-size:12px;color:var(--text-secondary);margin-top:2px" data-i18n="membership_rolling_desc">Važi 12 meseci od datuma uplate (npr. od 4. februara do 3. februara sledeće godine)</div>
+                    </div>
+                </label>
+            </div>
+        </div>
+        <button class="btn btn-primary" onclick="saveGeneralSettings()" style="margin-top:16px" data-i18n="save">Save</button>
+    </div>
+</div>
+
+<!-- Permissions -->
+<div class="settings-tab" id="stab-permissions" style="display:none">
+    <div class="card">
+        <h3 data-i18n="permissions">Dozvole korisnika</h3>
+        <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px">
+            Administratori imaju pristup svim funkcijama. Kliknite na bibliotekara da podesite šta on/ona može da radi.
+        </p>
+        <div id="permissions-staff-list">
+            <p style="color:var(--text-secondary)">Učitavanje...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Permissions Edit Modal -->
+<div class="modal-overlay" id="permissions-modal">
+    <div class="modal">
+        <h2 id="perm-modal-title" style="margin-bottom:4px">Dozvole</h2>
+        <p id="perm-modal-username" style="color:var(--text-secondary);font-size:13px;margin-bottom:16px"></p>
+        <input type="hidden" id="perm-user-id">
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">
+            <strong>Čitanje</strong> — pregled podataka. <strong>Pisanje</strong> — dodavanje, izmena i brisanje.
+        </p>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th data-i18n="module">Modul</th>
+                        <th style="text-align:center;width:90px" data-i18n="read">Čitanje</th>
+                        <th style="text-align:center;width:90px" data-i18n="write">Pisanje</th>
+                    </tr>
+                </thead>
+                <tbody id="perm-tbody"></tbody>
+            </table>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('permissions-modal')" data-i18n="cancel">Otkaži</button>
+            <button type="button" class="btn btn-primary" onclick="savePermissions()" data-i18n="save">Sačuvaj</button>
+        </div>
     </div>
 </div>
 
@@ -160,6 +222,48 @@
     </div>
 </div>
 
+<!-- Books -->
+<div class="settings-tab" id="stab-books" style="display:none">
+    <div class="card">
+        <h3 data-i18n="new_book_title">Nova knjiga</h3>
+        <form onsubmit="saveNewBook(event)">
+            <div class="form-group">
+                <label data-i18n="title">Naslov *</label>
+                <input type="text" id="new-book-title" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label data-i18n="author">Autor *</label>
+                <input type="text" id="new-book-author" class="form-control" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label data-i18n="publisher">Izdavač</label>
+                    <input type="text" id="new-book-publisher" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label data-i18n="year_published">Godina</label>
+                    <input type="number" id="new-book-year" class="form-control">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label data-i18n="genre">Žanr</label>
+                    <input type="text" id="new-book-genre" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label data-i18n="language_label">Jezik</label>
+                    <input type="text" id="new-book-language" class="form-control" value="srpski">
+                </div>
+            </div>
+            <div class="form-group">
+                <label data-i18n="description">Opis</label>
+                <textarea id="new-book-desc" class="form-control" rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary" data-i18n="save">Sačuvaj</button>
+        </form>
+    </div>
+</div>
+
 <!-- Import/Export -->
 <div class="settings-tab" id="stab-import" style="display:none">
     <div class="card">
@@ -200,6 +304,46 @@
     </div>
 </div>
 
+<!-- Edit Staff Modal -->
+<div class="modal-overlay" id="edit-staff-modal">
+    <div class="modal">
+        <h2 data-i18n="edit_user_title">Izmeni korisnika</h2>
+        <form onsubmit="saveEditStaff(event)">
+            <input type="hidden" id="edit-staff-id">
+            <div class="form-group">
+                <label data-i18n="staff_username">Korisničko ime</label>
+                <input type="text" id="edit-staff-username" class="form-control" disabled style="opacity:0.6">
+            </div>
+            <div class="form-group">
+                <label data-i18n="staff_full_name">Puno ime *</label>
+                <input type="text" id="edit-staff-name" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label data-i18n="new_password">Nova lozinka</label>
+                <input type="password" id="edit-staff-password" class="form-control" data-i18n-placeholder="leave_blank_for_current" placeholder="Ostavite prazno da ne menjate">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                        <input type="checkbox" id="edit-staff-admin">
+                        <span data-i18n="administrator">Administrator</span>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                        <input type="checkbox" id="edit-staff-active">
+                        <span data-i18n="active_user">Aktivan nalog</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('edit-staff-modal')" data-i18n="cancel">Otkaži</button>
+                <button type="submit" class="btn btn-primary" data-i18n="save">Sačuvaj</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- New Staff Modal -->
 <div class="modal-overlay" id="new-staff-modal">
     <div class="modal">
@@ -237,6 +381,7 @@ function switchSettingsTab(tab) {
     document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
     document.getElementById(`stab-${tab}`).style.display = 'block';
     event.target.classList.add('active');
+    if (tab === 'permissions' && typeof loadPermissionsTab === 'function') loadPermissionsTab();
 }
 </script>
 {% endblock %}

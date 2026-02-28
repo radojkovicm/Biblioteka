@@ -12,7 +12,10 @@ from app.database import get_db
 from app.models.staff import Staff
 from app.models.user_permission import UserPermission
 
-SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "biblioteka-jwt-secret-key-2026-change-me")
+SECRET_KEY = os.environ.get("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("JWT_SECRET_KEY environment variable is not set. Please configure it in config/.env")
+
 ALGORITHM = os.environ.get("JWT_ALGORITHM", "HS256")
 EXPIRATION_MINUTES = int(os.environ.get("JWT_EXPIRATION_MINUTES", "30"))  # Match frontend session timeout
 

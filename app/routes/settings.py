@@ -33,6 +33,7 @@ def get_public_config(db: Session = Depends(get_db)):
         "languages": LANGUAGES,
         "translations": TRANSLATIONS.get(config.get("language", "sr"), TRANSLATIONS["sr"]),
         "library_name": config.get("library_name", "Biblioteka"),
+        "membership_type": config.get("membership_type", "calendar"),
     }
 
 

@@ -53,7 +53,44 @@ def list_members(
     if member_type:
         query = query.filter(Member.member_type == member_type)
     query = query.order_by(Member.last_name, Member.first_name)
-    return query.offset((page - 1) * per_page).limit(per_page).all()
+    members = query.offset((page - 1) * per_page).limit(per_page).all()
+    
+    # Add last_membership to each member
+    result = []
+    for member in members:
+        member_dict = {
+            'id': member.id,
+            'member_number': member.member_number,
+            'first_name': member.first_name,
+            'last_name': member.last_name,
+            'date_of_birth': member.date_of_birth,
+            'email': member.email,
+            'phone': member.phone,
+            'address': member.address,
+            'member_type': member.member_type,
+            'is_active': member.is_active,
+            'is_blocked': member.is_blocked,
+            'block_reason': member.block_reason,
+            'allow_notifications': member.allow_notifications,
+            'notes': member.notes,
+            'registered_at': member.registered_at,
+            'last_membership': None
+        }
+        if member.memberships:
+            last_ms = sorted(member.memberships, key=lambda m: m.valid_until, reverse=True)[0]
+            member_dict['last_membership'] = {
+                'id': last_ms.id,
+                'member_id': last_ms.member_id,
+                'year': last_ms.year,
+                'amount_paid': last_ms.amount_paid,
+                'paid_at': last_ms.paid_at,
+                'valid_from': last_ms.valid_from,
+                'valid_until': last_ms.valid_until,
+                'recorded_by': last_ms.recorded_by,
+            }
+        result.append(member_dict)
+
+    return result
 
 
 @router.get("/{member_id}", response_model=MemberOut)
@@ -62,7 +99,39 @@ def get_member(member_id: int, current_user: Staff = Depends(get_current_user),
     member = db.query(Member).filter(Member.id == member_id, Member.is_deleted == False).first()
     if not member:
         raise HTTPException(status_code=404, detail="Član nije pronađen")
-    return member
+    
+    # Add last_membership
+    member_dict = {
+        'id': member.id,
+        'member_number': member.member_number,
+        'first_name': member.first_name,
+        'last_name': member.last_name,
+        'date_of_birth': member.date_of_birth,
+        'email': member.email,
+        'phone': member.phone,
+        'address': member.address,
+        'member_type': member.member_type,
+        'is_active': member.is_active,
+        'is_blocked': member.is_blocked,
+        'block_reason': member.block_reason,
+        'allow_notifications': member.allow_notifications,
+        'notes': member.notes,
+        'registered_at': member.registered_at,
+        'last_membership': None
+    }
+    if member.memberships:
+        last_ms = sorted(member.memberships, key=lambda m: m.valid_until, reverse=True)[0]
+        member_dict['last_membership'] = {
+            'id': last_ms.id,
+            'member_id': last_ms.member_id,
+            'year': last_ms.year,
+            'amount_paid': last_ms.amount_paid,
+            'paid_at': last_ms.paid_at,
+            'valid_from': last_ms.valid_from,
+            'valid_until': last_ms.valid_until,
+            'recorded_by': last_ms.recorded_by,
+        }
+    return member_dict
 
 
 @router.post("", response_model=MemberOut)
@@ -70,8 +139,16 @@ def create_member(data: MemberCreate, request: Request,
                   current_user: Staff = Depends(check_permission("members", write=True)),
                   db: Session = Depends(get_db)):
     member = Member(
-        member_number=_generate_member_number(db),
-        **data.model_dump(),
+        member_number=str(data.member_number),
+        first_name=data.first_name,
+        last_name=data.last_name,
+        date_of_birth=data.date_of_birth,
+        email=data.email,
+        phone=data.phone,
+        address=data.address,
+        member_type=data.member_type,
+        allow_notifications=data.allow_notifications,
+        notes=data.notes,
     )
     db.add(member)
     db.commit()

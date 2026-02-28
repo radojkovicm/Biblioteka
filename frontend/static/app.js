@@ -416,7 +416,7 @@ async function openBookDetail(bookId) {
         const book = await res.json();
 
         document.getElementById('detail-book-title').textContent = book.title;
-        document.getElementById('detail-book-author').textContent = book.author;
+        document.getElementById('detail-book-author-sub').textContent = book.author || '-';
         document.getElementById('detail-book-publisher').textContent = book.publisher || '-';
         document.getElementById('detail-book-year').textContent = book.year_published || '-';
         document.getElementById('detail-book-genre').textContent = book.genre || '-';
@@ -485,6 +485,70 @@ async function saveNewCopy(e) {
             showToast(t('copy_added'));
             closeModal('new-copy-modal');
             openBookDetail(parseInt(bookId));
+        } else {
+            const err = await res.json();
+            showToast(err.detail || t('error'), 'error');
+        }
+    } catch (e) {
+        showToast(t('network_error'), 'error');
+    }
+}
+
+// --- Edit / Delete book ---
+function openEditBookModal() {
+    const bookId = document.getElementById('detail-book-id').value;
+    const clean = id => { const v = document.getElementById(id).textContent; return v === '-' ? '' : v; };
+
+    document.getElementById('edit-book-id').value = bookId;
+    document.getElementById('edit-book-title').value = document.getElementById('detail-book-title').textContent;
+    document.getElementById('edit-book-author').value = clean('detail-book-author-sub');
+    document.getElementById('edit-book-publisher').value = clean('detail-book-publisher');
+    document.getElementById('edit-book-year').value = clean('detail-book-year');
+    document.getElementById('edit-book-genre').value = clean('detail-book-genre');
+    document.getElementById('edit-book-lang').value = clean('detail-book-lang');
+    document.getElementById('edit-book-desc').value = clean('detail-book-desc');
+
+    closeModal('book-detail-modal');
+    openModal('edit-book-modal');
+}
+
+async function saveEditBook(e) {
+    e.preventDefault();
+    const bookId = document.getElementById('edit-book-id').value;
+    const data = {
+        title: document.getElementById('edit-book-title').value,
+        author: document.getElementById('edit-book-author').value,
+        publisher: document.getElementById('edit-book-publisher').value || null,
+        year_published: parseInt(document.getElementById('edit-book-year').value) || null,
+        genre: document.getElementById('edit-book-genre').value || null,
+        language: document.getElementById('edit-book-lang').value || 'srpski',
+        description: document.getElementById('edit-book-desc').value || null,
+    };
+    try {
+        const res = await apiFetch(`/books/${bookId}`, { method: 'PUT', body: JSON.stringify(data) });
+        if (res.ok) {
+            showToast(t('book_saved') || 'Knjiga sačuvana');
+            closeModal('edit-book-modal');
+            loadBooks();
+            openBookDetail(parseInt(bookId));
+        } else {
+            const err = await res.json();
+            showToast(err.detail || t('error'), 'error');
+        }
+    } catch (e) {
+        showToast(t('network_error'), 'error');
+    }
+}
+
+async function deleteBook() {
+    const bookId = document.getElementById('edit-book-id').value;
+    if (!confirm(t('confirm_delete'))) return;
+    try {
+        const res = await apiFetch(`/books/${bookId}`, { method: 'DELETE' });
+        if (res.ok) {
+            showToast(t('book_deleted') || 'Knjiga obrisana');
+            closeModal('edit-book-modal');
+            loadBooks();
         } else {
             const err = await res.json();
             showToast(err.detail || t('error'), 'error');
@@ -571,16 +635,34 @@ async function loadMembers() {
         const members = await res.json();
         const tbody = document.getElementById('members-tbody');
         if (!tbody) return;
-        tbody.innerHTML = members.map(m => `
-            <tr onclick="openMemberDetail(${m.id})">
+        tbody.innerHTML = members.map(m => {
+            let statusBadgeHtml = '';
+            let rowClass = '';
+            
+            if (m.is_blocked) {
+                statusBadgeHtml = statusBadge('overdue');
+            } else if (!m.last_membership) {
+                statusBadgeHtml = statusBadge('not_paid');
+            } else {
+                const today = new Date();
+                const validUntil = new Date(m.last_membership.valid_until);
+                if (validUntil < today) {
+                    statusBadgeHtml = statusBadge('expired');
+                } else {
+                    statusBadgeHtml = statusBadge('paid');
+                    rowClass = 'style="background-color:rgba(76,175,80,0.1)"';
+                }
+            }
+            return `
+            <tr onclick="openMemberDetail(${m.id})" ${rowClass}>
                 <td>${m.member_number}</td>
                 <td>${m.first_name} ${m.last_name}</td>
                 <td>${memberTypeName(m.member_type)}</td>
                 <td>${m.email || '-'}</td>
                 <td>${m.phone || '-'}</td>
-                <td>${m.is_blocked ? statusBadge('overdue') : statusBadge('active')}</td>
+                <td>${statusBadgeHtml}</td>
             </tr>
-        `).join('');
+        `}).join('');
         if (members.length === 0) {
             tbody.innerHTML = `<tr><td colspan="6" class="empty-state">${t('no_results')}</td></tr>`;
         }
@@ -604,38 +686,51 @@ async function openMemberDetail(memberId) {
         document.getElementById('detail-member-status').innerHTML = m.is_blocked ?
             `<span class="badge badge-overdue">${t('blocked')}</span>` : `<span class="badge badge-active">${t('active')}</span>`;
         document.getElementById('detail-member-id').value = memberId;
+        document.getElementById('detail-member-notifications').checked = m.allow_notifications;
 
-        // Load loans
+        // Load loans - split into active and archive
         const loansRes = await apiFetch(`/members/${memberId}/loans`);
         const loans = await loansRes.json();
+        const activeLoans = loans.filter(l => l.status === 'active' || l.status === 'overdue');
+        const archivedLoans = loans.filter(l => l.status !== 'active' && l.status !== 'overdue');
+
         const loansTbody = document.getElementById('member-loans-tbody');
-        loansTbody.innerHTML = loans.map(l => `
+        loansTbody.innerHTML = activeLoans.length ? activeLoans.map(l => `
             <tr>
                 <td>${l.book_title || '-'}</td>
                 <td>${l.library_number || '-'}</td>
                 <td>${formatDate(l.due_date)}</td>
                 <td>${statusBadge(l.status)}</td>
                 <td>
-                    ${l.status === 'active' || l.status === 'overdue' ? `
-                        <button class="btn btn-sm btn-secondary" onclick="returnBook(${l.id})">${t('return')}</button>
-                        <button class="btn btn-sm btn-secondary" onclick="extendLoan(${l.id})">${t('extend')}</button>
-                    ` : ''}
+                    <button class="btn btn-sm btn-secondary" onclick="returnBook(${l.id})">${t('return')}</button>
+                    <button class="btn btn-sm btn-secondary" onclick="extendLoan(${l.id})">${t('extend')}</button>
                 </td>
             </tr>
-        `).join('');
+        `).join('') : `<tr><td colspan="5" class="empty-state">${t('no_active_loans') || 'Nema aktivnih pozajmica'}</td></tr>`;
+
+        const archiveTbody = document.getElementById('member-archive-tbody');
+        archiveTbody.innerHTML = archivedLoans.length ? archivedLoans.map(l => `
+            <tr>
+                <td>${l.book_title || '-'}</td>
+                <td>${l.library_number || '-'}</td>
+                <td>${formatDate(l.loaned_at)}</td>
+                <td>${formatDate(l.returned_at)}</td>
+                <td>${statusBadge(l.status)}</td>
+            </tr>
+        `).join('') : `<tr><td colspan="5" class="empty-state">${t('no_results')}</td></tr>`;
 
         // Load memberships
         const memRes = await apiFetch(`/members/${memberId}/memberships`);
         const memberships = await memRes.json();
         const memTbody = document.getElementById('member-memberships-tbody');
-        memTbody.innerHTML = memberships.map(ms => `
+        memTbody.innerHTML = memberships.length ? memberships.map(ms => `
             <tr>
-                <td>${ms.year}</td>
                 <td>${formatMoney(ms.amount_paid)}</td>
                 <td>${formatDate(ms.paid_at)}</td>
+                <td>${formatDate(ms.valid_from)}</td>
                 <td>${formatDate(ms.valid_until)}</td>
             </tr>
-        `).join('');
+        `).join('') : `<tr><td colspan="4" class="empty-state">${t('no_results')}</td></tr>`;
 
         openModal('member-detail-modal');
     } catch (e) {
@@ -681,6 +776,7 @@ async function extendLoan(loanId) {
 async function saveNewMember(e) {
     e.preventDefault();
     const data = {
+        member_number: parseInt(document.getElementById('new-member-number').value),
         first_name: document.getElementById('new-member-fname').value,
         last_name: document.getElementById('new-member-lname').value,
         date_of_birth: document.getElementById('new-member-dob').value || null,
@@ -688,6 +784,7 @@ async function saveNewMember(e) {
         phone: document.getElementById('new-member-phone').value || null,
         address: document.getElementById('new-member-address').value || null,
         member_type: document.getElementById('new-member-type').value,
+        allow_notifications: document.getElementById('new-member-notifications').checked,
     };
     try {
         const res = await apiFetch('/members', { method: 'POST', body: JSON.stringify(data) });
@@ -705,22 +802,124 @@ async function saveNewMember(e) {
     }
 }
 
+function calcMembershipDates() {
+    const paidAt = document.getElementById('membership-paid-at').value;
+    if (!paidAt) return;
+    const d = new Date(paidAt);
+    const validFrom = paidAt;
+    let validUntil;
+    if (CONFIG.membership_type === 'rolling') {
+        const end = new Date(d);
+        end.setDate(end.getDate() + 365);
+        validUntil = end.toISOString().split('T')[0];
+    } else {
+        validUntil = `${d.getFullYear()}-12-31`;
+    }
+    document.getElementById('membership-valid-from').value = validFrom;
+    document.getElementById('membership-valid-until').value = validUntil;
+}
+
+function openMembershipModal() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('membership-paid-at').value = today;
+    document.getElementById('membership-amount').value = '';
+    calcMembershipDates();
+    openModal('membership-modal');
+}
+
 async function saveMembership(e) {
     e.preventDefault();
     const memberId = document.getElementById('detail-member-id').value;
-    const year = parseInt(document.getElementById('membership-year').value);
+    const paidAt = document.getElementById('membership-paid-at').value;
+    const validFrom = document.getElementById('membership-valid-from').value;
+    const validUntil = document.getElementById('membership-valid-until').value;
+
+    if (!validFrom || !validUntil) {
+        showToast(t('error'), 'error');
+        return;
+    }
+
     const data = {
-        year: year,
+        year: new Date(paidAt).getFullYear(),
         amount_paid: parseFloat(document.getElementById('membership-amount').value),
-        paid_at: document.getElementById('membership-paid-at').value,
-        valid_from: document.getElementById('membership-paid-at').value,
-        valid_until: `${year}-12-31`,
+        paid_at: paidAt,
+        valid_from: validFrom,
+        valid_until: validUntil,
     };
     try {
         const res = await apiFetch(`/members/${memberId}/membership`, { method: 'POST', body: JSON.stringify(data) });
         if (res.ok) {
             showToast(t('membership_saved'));
             closeModal('membership-modal');
+            openMemberDetail(parseInt(memberId));
+        } else {
+            const err = await res.json();
+            showToast(err.detail || t('error'), 'error');
+        }
+    } catch (e) {
+        showToast(t('network_error'), 'error');
+    }
+}
+
+function openEditMemberModal() {
+    const memberId = document.getElementById('detail-member-id').value;
+    const memberNumber = document.getElementById('detail-member-number').textContent;
+    const [fname, ...rest] = document.getElementById('detail-member-name').textContent.split(' ');
+    const clean = id => { const v = document.getElementById(id).textContent; return v === '-' ? '' : v; };
+
+    document.getElementById('edit-member-id').value = memberId;
+    document.getElementById('edit-member-number').value = memberNumber.replace(/^Broj člana: /, '');
+    document.getElementById('edit-member-fname').value = fname || '';
+    document.getElementById('edit-member-lname').value = rest.join(' ') || '';
+    document.getElementById('edit-member-dob').value = clean('detail-member-dob');
+    document.getElementById('edit-member-type').value = document.getElementById('detail-member-type').textContent.toLowerCase();
+    document.getElementById('edit-member-email').value = clean('detail-member-email');
+    document.getElementById('edit-member-phone').value = clean('detail-member-phone');
+    document.getElementById('edit-member-address').value = clean('detail-member-address');
+    document.getElementById('edit-member-notifications').checked = document.getElementById('detail-member-notifications').checked;
+
+    closeModal('member-detail-modal');
+    openModal('edit-member-modal');
+}
+
+async function deleteMember() {
+    const memberId = document.getElementById('edit-member-id').value;
+    if (!confirm(t('confirm_delete'))) return;
+    try {
+        const res = await apiFetch(`/members/${memberId}`, { method: 'DELETE' });
+        if (res.ok) {
+            showToast(t('member_deleted') || 'Član obrisan');
+            closeModal('edit-member-modal');
+            loadMembers();
+        } else {
+            const err = await res.json();
+            showToast(err.detail || t('error'), 'error');
+        }
+    } catch (e) {
+        showToast(t('network_error'), 'error');
+    }
+}
+
+async function saveEditMember(e) {
+    e.preventDefault();
+    const memberId = document.getElementById('edit-member-id').value;
+    const data = {
+        member_number: parseInt(document.getElementById('edit-member-number').value),
+        first_name: document.getElementById('edit-member-fname').value,
+        last_name: document.getElementById('edit-member-lname').value,
+        date_of_birth: document.getElementById('edit-member-dob').value || null,
+        email: document.getElementById('edit-member-email').value || null,
+        phone: document.getElementById('edit-member-phone').value || null,
+        address: document.getElementById('edit-member-address').value || null,
+        member_type: document.getElementById('edit-member-type').value,
+        allow_notifications: document.getElementById('edit-member-notifications').checked,
+    };
+    try {
+        const res = await apiFetch(`/members/${memberId}`, { method: 'PUT', body: JSON.stringify(data) });
+        if (res.ok) {
+            showToast(t('member_saved'));
+            closeModal('edit-member-modal');
+            loadMembers();
             openMemberDetail(parseInt(memberId));
         } else {
             const err = await res.json();
@@ -739,18 +938,23 @@ async function initReservationsPage() {
     await loadPublicConfig();  // Load language/config before rendering
     initI18n();  // Apply translations
     initSidebar();
-    loadReservations();
+    loadReservations('active');
 }
 
-async function loadReservations(status = '') {
+async function loadReservations(status = 'active') {
+    // 'active' is frontend shorthand for waiting+notified combined
     let url = '/reservations';
-    if (status) url += `?status=${status}`;
+    if (status && status !== 'active') url += `?status=${status}`;
     try {
         const res = await apiFetch(url);
+        if (!res) return;
         const data = await res.json();
+        const rows = status === 'active'
+            ? data.filter(r => r.status === 'waiting' || r.status === 'notified')
+            : data;
         const tbody = document.getElementById('reservations-tbody');
         if (!tbody) return;
-        tbody.innerHTML = data.map(r => `
+        tbody.innerHTML = rows.map(r => `
             <tr>
                 <td>${r.book_title || '-'}</td>
                 <td>${r.member_name || '-'} (${r.member_number || ''})</td>
@@ -765,7 +969,7 @@ async function loadReservations(status = '') {
                 </td>
             </tr>
         `).join('');
-        if (data.length === 0) {
+        if (rows.length === 0) {
             tbody.innerHTML = `<tr><td colspan="6" class="empty-state">${t('no_results')}</td></tr>`;
         }
     } catch (e) {
@@ -776,14 +980,16 @@ async function loadReservations(status = '') {
 async function cancelReservation(id) {
     if (!confirm(t('confirm_delete'))) return;
     const res = await apiFetch(`/reservations/${id}/cancel`, { method: 'POST' });
-    if (res.ok) { showToast(t('reservation_cancelled')); loadReservations(); }
-    else { const e = await res.json(); showToast(e.detail, 'error'); }
+    const currentFilter = document.getElementById('reservation-filter')?.value || 'active';
+    if (res && res.ok) { showToast(t('reservation_cancelled')); loadReservations(currentFilter); }
+    else if (res) { const e = await res.json(); showToast(e.detail, 'error'); }
 }
 
 async function fulfillReservation(id) {
     const res = await apiFetch(`/reservations/${id}/fulfill`, { method: 'POST' });
-    if (res.ok) { showToast(t('reservation_fulfilled')); loadReservations(); }
-    else { const e = await res.json(); showToast(e.detail, 'error'); }
+    const currentFilter = document.getElementById('reservation-filter')?.value || 'active';
+    if (res && res.ok) { showToast(t('reservation_fulfilled')); loadReservations(currentFilter); }
+    else if (res) { const e = await res.json(); showToast(e.detail, 'error'); }
 }
 
 async function saveNewReservation(e) {
@@ -921,6 +1127,20 @@ async function initSettingsPage() {
     await loadPublicConfig();  // Load language/config before rendering
     initI18n();  // Apply translations to page
     initSidebar();
+    
+    // Hide admin-only tabs for non-admin users
+    const user = getUser();
+    if (!user || !user.is_admin) {
+        // Hide admin-only tabs
+        const tabs = ['prices', 'import', 'backup', 'permissions'];
+        tabs.forEach(tab => {
+            const btn = document.querySelector(`[onclick="switchSettingsTab('${tab}')"]`);
+            const div = document.getElementById(`stab-${tab}`);
+            if (btn) btn.style.display = 'none';
+            if (div) div.style.display = 'none';
+        });
+    }
+    
     loadSettings();
     loadStaffList();
 }
@@ -933,6 +1153,9 @@ async function loadSettings() {
     document.getElementById('setting-loan-days').value = data.loan_duration_days || '30';
     document.getElementById('setting-currency').value = data.currency || 'RSD';
     document.getElementById('setting-language').value = data.language || 'sr';
+    const membershipType = data.membership_type || 'calendar';
+    const mtRadio = document.querySelector(`input[name="membership-type"][value="${membershipType}"]`);
+    if (mtRadio) mtRadio.checked = true;
     
     // Update prices title with currency
     const pricesTitle = document.getElementById('prices-title');
@@ -973,6 +1196,8 @@ async function saveGeneralSettings() {
     await saveSetting('currency', document.getElementById('setting-currency').value);
     const newLanguage = document.getElementById('setting-language').value;
     await saveSetting('language', newLanguage);
+    const membershipType = document.querySelector('input[name="membership-type"]:checked')?.value || 'calendar';
+    await saveSetting('membership_type', membershipType);
     
     // Save language selection to localStorage so it persists
     localStorage.setItem('selected_language', newLanguage);
@@ -1038,19 +1263,34 @@ async function uploadLogo() {
 }
 
 async function loadStaffList() {
-    const user = getUser();
-    if (!user?.is_admin) return;
     const res = await apiFetch('/auth/staff');
+    if (!res.ok) {
+        showToast(t('error'), 'error');
+        return;
+    }
     const staff = await res.json();
     const tbody = document.getElementById('staff-tbody');
     if (!tbody) return;
+    
+    if (!staff || staff.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">' + t('no_results') + '</td></tr>';
+        return;
+    }
+    
+    // Store for edit modal
+    window._staffCache = {};
+    staff.forEach(s => { window._staffCache[s.id] = s; });
+
     tbody.innerHTML = staff.map(s => `
         <tr>
             <td>${s.username}</td>
             <td>${s.full_name}</td>
             <td>${s.is_admin ? t('administrator') : t('librarian')}</td>
-            <td>${s.is_active ? statusBadge('active') : statusBadge('cancelled')}</td>
-            <td><button class="btn btn-sm btn-secondary" onclick="editStaff(${s.id})">${t('edit')}</button></td>
+            <td>${s.is_active ? statusBadge('active') : statusBadge('inactive')}</td>
+            <td>
+                <button class="btn btn-sm btn-secondary" onclick="editStaff(${s.id})">${t('edit')}</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteStaff(${s.id})">${t('delete')}</button>
+            </td>
         </tr>
     `).join('');
 }
@@ -1071,6 +1311,142 @@ async function saveNewStaff(e) {
     } else {
         const err = await res.json();
         showToast(err.detail, 'error');
+    }
+}
+
+function editStaff(staffId) {
+    const s = window._staffCache?.[staffId];
+    if (!s) return;
+    document.getElementById('edit-staff-id').value = s.id;
+    document.getElementById('edit-staff-username').value = s.username;
+    document.getElementById('edit-staff-name').value = s.full_name;
+    document.getElementById('edit-staff-password').value = '';
+    document.getElementById('edit-staff-admin').checked = s.is_admin;
+    document.getElementById('edit-staff-active').checked = s.is_active;
+    openModal('edit-staff-modal');
+}
+
+async function saveEditStaff(e) {
+    e.preventDefault();
+    const staffId = document.getElementById('edit-staff-id').value;
+    const data = {
+        full_name: document.getElementById('edit-staff-name').value,
+        is_admin: document.getElementById('edit-staff-admin').checked,
+        is_active: document.getElementById('edit-staff-active').checked,
+    };
+    const pwd = document.getElementById('edit-staff-password').value;
+    if (pwd) data.password = pwd;
+
+    const res = await apiFetch(`/auth/staff/${staffId}`, { method: 'PUT', body: JSON.stringify(data) });
+    if (res && res.ok) {
+        showToast(t('saved'));
+        closeModal('edit-staff-modal');
+        loadStaffList();
+    } else if (res) {
+        const err = await res.json();
+        showToast(err.detail || t('error'), 'error');
+    }
+}
+
+function deleteStaff(staffId) {
+    const s = window._staffCache?.[staffId];
+    const name = s ? s.full_name : '';
+    if (confirm(`${t('confirm_delete')} — ${name}?`)) {
+        // Soft delete: deactivate the account
+        apiFetch(`/auth/staff/${staffId}`, {
+            method: 'PUT',
+            body: JSON.stringify({ is_active: false }),
+        }).then(res => {
+            if (res && res.ok) {
+                showToast(t('success'));
+                loadStaffList();
+            } else {
+                showToast(t('error'), 'error');
+            }
+        });
+    }
+}
+
+// --- Permissions management ---
+const MODULE_NAMES = {
+    books: 'Knjige',
+    members: 'Članovi',
+    reservations: 'Rezervacije',
+    reports: 'Izveštaji',
+    settings: 'Podešavanja',
+    finance: 'Finansije',
+};
+
+async function loadPermissionsTab() {
+    const container = document.getElementById('permissions-staff-list');
+    if (!container) return;
+    try {
+        const res = await apiFetch('/auth/staff');
+        const staff = await res.json();
+        const nonAdmins = staff.filter(s => !s.is_admin);
+        if (nonAdmins.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-secondary)">Nema bibliotekara za podešavanje dozvola. Dodajte korisnika bez administratorske uloge.</p>';
+            return;
+        }
+        container.innerHTML = nonAdmins.map(s => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px">
+                <div>
+                    <strong>${s.full_name}</strong>
+                    <span style="color:var(--text-secondary);margin-left:8px">@${s.username}</span>
+                    ${!s.is_active ? '<span class="badge badge-inactive" style="margin-left:8px">Neaktivan</span>' : ''}
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="openPermissionsModal(${s.id}, '${s.full_name.replace(/'/g, "\\'")}', '@${s.username}')">Dozvole</button>
+            </div>
+        `).join('');
+    } catch (e) {
+        container.innerHTML = '<p style="color:var(--danger)">Greška pri učitavanju.</p>';
+    }
+}
+
+async function openPermissionsModal(userId, fullName, username) {
+    document.getElementById('perm-user-id').value = userId;
+    document.getElementById('perm-modal-title').textContent = fullName;
+    document.getElementById('perm-modal-username').textContent = username;
+
+    try {
+        const res = await apiFetch(`/settings/permissions/${userId}`);
+        const perms = await res.json();
+        const permMap = {};
+        perms.forEach(p => { permMap[p.module] = p; });
+
+        document.getElementById('perm-tbody').innerHTML = Object.entries(MODULE_NAMES).map(([mod, name]) => {
+            const p = permMap[mod] || { can_read: false, can_write: false };
+            return `
+            <tr>
+                <td>${name}</td>
+                <td style="text-align:center"><input type="checkbox" data-module="${mod}" data-ptype="read" ${p.can_read ? 'checked' : ''}></td>
+                <td style="text-align:center"><input type="checkbox" data-module="${mod}" data-ptype="write" ${p.can_write ? 'checked' : ''}></td>
+            </tr>`;
+        }).join('');
+
+        openModal('permissions-modal');
+    } catch (e) {
+        showToast(t('error'), 'error');
+    }
+}
+
+async function savePermissions() {
+    const userId = parseInt(document.getElementById('perm-user-id').value);
+    const rows = document.querySelectorAll('#perm-tbody tr');
+    try {
+        await Promise.all(Array.from(rows).map(row => {
+            const mod = row.querySelector('[data-ptype="read"]').getAttribute('data-module');
+            const canRead = row.querySelector('[data-ptype="read"]').checked;
+            const canWrite = row.querySelector('[data-ptype="write"]').checked;
+            return apiFetch('/settings/permissions', {
+                method: 'PUT',
+                body: JSON.stringify({ user_id: userId, module: mod, can_read: canRead, can_write: canWrite }),
+            });
+        }));
+        showToast(t('saved'));
+        closeModal('permissions-modal');
+    } catch (e) {
+        showToast(t('error'), 'error');
     }
 }
 

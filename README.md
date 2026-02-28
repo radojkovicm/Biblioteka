@@ -30,7 +30,7 @@ A comprehensive web-based library management system built with FastAPI, SQLAlche
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/yourusername/Biblioteka.git
+git clone https://github.com/radojkovicm/Biblioteka.git
 cd Biblioteka
 ```
 
@@ -70,14 +70,36 @@ Edit `config/.env` with your settings:
 # Database Configuration
 DATABASE_URL=sqlite:///./biblioteka.db
 
-# JWT Security - Change this to a secure random string
-SECRET_KEY=your-very-secure-secret-key-here-change-in-production
+# JWT Security - REQUIRED: Generate a strong random secret key
+# Example: openssl rand -hex 32 (Linux/macOS) or use an online generator
+# This is critical for security in production!
+JWT_SECRET_KEY=your-very-secure-random-string-here-minimum-32-chars
+
+# JWT Settings
+JWT_ALGORITHM=HS256
+JWT_EXPIRATION_MINUTES=30
+
+# Session Management
+SESSION_TIMEOUT_MINUTES=30
 
 # Server Settings
 DEBUG=False
 HOST=0.0.0.0
 PORT=8000
+
+# Email Notifications (optional)
+EMAIL_SMTP_HOST=
+EMAIL_SMTP_PORT=587
+EMAIL_SMTP_USER=
+EMAIL_SMTP_PASSWORD=
+EMAIL_SENDER_NAME=Biblioteka
+EMAIL_ENABLED=False
 ```
+
+⚠️ **IMPORTANT**: 
+- `JWT_SECRET_KEY` is critical for security. Use a strong random string. Never use the example value in production.
+- For Linux/macOS: `openssl rand -hex 32`
+- Keep `.env` file secret and never commit it to version control.
 
 ### 5. Initialize Database
 
@@ -85,7 +107,9 @@ The database will be created automatically on first run. On first startup, a def
 
 - **Username**: `admin`
 - **Password**: `admin`
-- **⚠️ Change this password immediately after first login**
+- **⚠️ CRITICAL**: Change this password immediately after first login!
+
+If the app fails to start due to missing `JWT_SECRET_KEY`, ensure you've configured it in `config/.env` with a strong random value.
 
 ## Running the Application
 
@@ -247,12 +271,28 @@ Biblioteka/
 
 ## Troubleshooting
 
+### Application Won't Start - JWT_SECRET_KEY Not Set
+
+If you see: `ValueError: JWT_SECRET_KEY environment variable is not set`
+
+1. Ensure `config/.env` exists (copy from `.envexample` if missing)
+2. Add `JWT_SECRET_KEY` with a strong random value:
+   ```bash
+   # Linux/macOS
+   openssl rand -hex 32
+   
+   # Windows PowerShell
+   [System.Convert]::ToHexString([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32)).ToLower()
+   ```
+3. Copy the generated string to `config/.env` as the `JWT_SECRET_KEY` value
+4. Restart the application
+
 ### Application Won't Start
 
 1. Verify Python version: `python --version` (must be 3.9+)
 2. Check virtual environment is activated
 3. Verify all dependencies installed: `pip install -r requirements.txt`
-4. Check `.env` file exists in `config/` directory
+4. Check `config/.env` file exists with `JWT_SECRET_KEY` configured
 5. Check port 8000 is not in use: `netstat -an | find ":8000"` (Windows)
 
 ### Database Issues
@@ -279,15 +319,20 @@ Then access at `http://localhost:8001`
 
 ## Security Notes
 
-- **Never commit `.env` file** to version control
-- Change `SECRET_KEY` before production deployment
-- Use HTTPS in production
+- **NEVER commit `.env` file to version control** - Use `.gitignore` to prevent accidental commits
+- **JWT_SECRET_KEY is CRITICAL** - Must be a strong random string (minimum 32 characters). Generate with:
+  - Linux/macOS: `openssl rand -hex 32`
+  - Windows: Use online generator or Python: `python -c "import secrets; print(secrets.token_hex(32))"`
+- **Default credentials** - Admin password defaults to `admin`. Change immediately after first login
+- Change `JWT_SECRET_KEY` before production deployment
+- Use HTTPS in production (never HTTP)
 - Keep Python packages updated: `pip install --upgrade -r requirements.txt`
-- Regularly backup database: `config/backups/` directory
+- Regularly backup database: located in `config/backups/` directory
 - Change default admin password immediately after installation
+- Never expose `.env` file in logs, error messages, or documentation
+- For production, use a secrets management system (AWS Secrets Manager, HashiCorp Vault, etc.)
 
 ## Performance Tips
-
 - For 10,000+ books: Consider PostgreSQL instead of SQLite
 - Enable database query caching for reports
 - Regular database backups recommended

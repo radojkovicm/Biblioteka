@@ -1,5 +1,6 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer
 from typing import Optional
+from datetime import datetime
 
 
 class LoginRequest(BaseModel):
@@ -36,7 +37,13 @@ class StaffOut(BaseModel):
     full_name: str
     is_admin: bool
     is_active: bool
-    last_login: Optional[str] = None
+    last_login: Optional[datetime] = None
+
+    @field_serializer('last_login')
+    def serialize_last_login(self, value: Optional[datetime]) -> Optional[str]:
+        if value is None:
+            return None
+        return value.isoformat()
 
     class Config:
         from_attributes = True

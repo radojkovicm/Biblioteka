@@ -1,5 +1,6 @@
 from datetime import datetime
 from sqlalchemy import Column, Integer, Text, Boolean, DateTime, Date
+from sqlalchemy.orm import relationship
 from app.database import Base
 
 
@@ -18,8 +19,11 @@ class Member(Base):
     is_active = Column(Boolean, default=True)
     is_blocked = Column(Boolean, default=False)
     block_reason = Column(Text, nullable=True)
+    allow_notifications = Column(Boolean, default=True)
     is_deleted = Column(Boolean, default=False)
     deleted_at = Column(DateTime, nullable=True)
     deleted_by = Column(Integer, nullable=True)
     notes = Column(Text, nullable=True)
     registered_at = Column(DateTime, default=datetime.utcnow)
+    
+    memberships = relationship("Membership", back_populates="member", cascade="all, delete-orphan")

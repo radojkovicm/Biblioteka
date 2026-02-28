@@ -339,7 +339,81 @@ tbody tr { cursor: pointer; }
     box-shadow: 0 20px 60px rgba(0,0,0,0.5);
 }
 .modal-wide { width: 700px; }
+.modal-xl {
+    width: min(95vw, 1100px);
+    max-width: 95vw;
+    max-height: 93vh;
+}
+.modal-overlay.top-align {
+    align-items: flex-start;
+    padding-top: 3vh;
+}
 .modal h2 { margin-bottom: 20px; font-size: 20px; }
+
+/* Detail info grid inside modals */
+.detail-grid {
+    display: grid;
+    background: var(--bg-secondary);
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    margin-bottom: 24px;
+}
+.detail-grid-2col { grid-template-columns: 1fr 1fr; }
+.detail-grid-3col { grid-template-columns: repeat(3, 1fr); }
+.detail-cell {
+    padding: 16px 20px;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+.detail-grid-2col .detail-cell:nth-child(2n) { border-right: none; }
+.detail-grid-2col .detail-cell:nth-last-child(-n+2) { border-bottom: none; }
+.detail-grid-3col .detail-cell:nth-child(3n) { border-right: none; }
+.detail-grid-3col .detail-cell:nth-last-child(-n+3) { border-bottom: none; }
+.detail-cell-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 6px;
+    font-weight: 700;
+}
+.detail-cell-value {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-primary);
+    line-height: 1.4;
+}
+.detail-desc {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+}
+.detail-desc .detail-cell-label { margin-bottom: 8px; }
+.detail-desc .detail-cell-value { font-size: 14px; font-weight: 400; line-height: 1.6; }
+.detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+}
+.detail-header h2 {
+    font-size: 26px;
+    margin-bottom: 6px;
+}
+.detail-header-sub {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+.detail-tabs .tab {
+    padding: 11px 22px;
+    font-size: 14px;
+    font-weight: 600;
+}
 .modal-actions {
     display: flex;
     gap: 12px;

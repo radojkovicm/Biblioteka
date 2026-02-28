@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, Text, Date, Float, ForeignKey
+from sqlalchemy.orm import relationship
 from app.database import Base
 
 
@@ -13,3 +14,5 @@ class Membership(Base):
     valid_from = Column(Date, nullable=False)
     valid_until = Column(Date, nullable=False)
     recorded_by = Column(Integer, ForeignKey("staff.id"), nullable=True)
+    
+    member = relationship("Member", back_populates="memberships")

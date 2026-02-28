@@ -77,10 +77,12 @@ def _seed_defaults():
     db = SessionLocal()
     try:
         if db.query(Staff).count() == 0:
+            # Create default admin user with default password
+            # ⚠️ Change password immediately after first login
             admin = Staff(
                 username="admin",
                 full_name="Administrator",
-                password_hash=bcrypt.hash("admin123"),
+                password_hash=bcrypt.hash("admin"),  # Default password - MUST change after first login
                 is_admin=True,
                 is_active=True,
             )

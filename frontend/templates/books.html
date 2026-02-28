@@ -4,7 +4,6 @@
 {% block content %}
 <div class="page-header">
     <h1 data-i18n="books">Knjige</h1>
-    <button class="btn btn-primary" onclick="openModal('new-book-modal')" data-i18n="new_book">+ Nova knjiga</button>
 </div>
 
 <div class="search-bar">
@@ -33,73 +32,55 @@
     </div>
 </div>
 
-<!-- New Book Modal -->
-<div class="modal-overlay" id="new-book-modal">
-    <div class="modal">
-        <h2 data-i18n="new_book_title">Nova knjiga</h2>
-        <form onsubmit="saveNewBook(event)">
-            <div class="form-group">
-                <label data-i18n="title">Naslov *</label>
-                <input type="text" id="new-book-title" class="form-control" required>
-            </div>
-            <div class="form-group">
-                <label data-i18n="author">Autor *</label>
-                <input type="text" id="new-book-author" class="form-control" required>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label data-i18n="publisher">Izdavač</label>
-                    <input type="text" id="new-book-publisher" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label data-i18n="year_published">Godina</label>
-                    <input type="number" id="new-book-year" class="form-control">
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label data-i18n="genre">Žanr</label>
-                    <input type="text" id="new-book-genre" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label data-i18n="language_label">Jezik</label>
-                    <input type="text" id="new-book-language" class="form-control" value="srpski">
-                </div>
-            </div>
-            <div class="form-group">
-                <label data-i18n="description">Opis</label>
-                <textarea id="new-book-desc" class="form-control" rows="3"></textarea>
-            </div>
-            <div class="modal-actions">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('new-book-modal')" data-i18n="cancel">Otkaži</button>
-                <button type="submit" class="btn btn-primary" data-i18n="save">Sačuvaj</button>
-            </div>
-        </form>
-    </div>
-</div>
-
 <!-- Book Detail Modal -->
-<div class="modal-overlay" id="book-detail-modal">
-    <div class="modal modal-wide">
+<div class="modal-overlay top-align" id="book-detail-modal">
+    <div class="modal modal-xl">
         <input type="hidden" id="detail-book-id">
-        <h2 id="detail-book-title">-</h2>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;font-size:14px">
-            <div><strong data-i18n="author">Autor:</strong> <span id="detail-book-author">-</span></div>
-            <div><strong data-i18n="publisher">Izdavač:</strong> <span id="detail-book-publisher">-</span></div>
-            <div><strong data-i18n="year_published">Godina:</strong> <span id="detail-book-year">-</span></div>
-            <div><strong data-i18n="genre">Žanr:</strong> <span id="detail-book-genre">-</span></div>
-            <div><strong data-i18n="language_label">Jezik:</strong> <span id="detail-book-lang">-</span></div>
-        </div>
-        <div style="font-size:14px;margin-bottom:16px"><strong data-i18n="description">Opis:</strong> <span id="detail-book-desc">-</span></div>
 
-        <div class="card-header">
+        <div class="detail-header">
+            <div>
+                <h2 id="detail-book-title">-</h2>
+                <div class="detail-header-sub" id="detail-book-author-sub" style="color:var(--text-muted);font-size:15px">-</div>
+            </div>
+        </div>
+
+        <div class="detail-grid detail-grid-2col">
+            <div class="detail-cell">
+                <div class="detail-cell-label" data-i18n="publisher">Izdavač</div>
+                <div class="detail-cell-value" id="detail-book-publisher">-</div>
+            </div>
+            <div class="detail-cell">
+                <div class="detail-cell-label" data-i18n="year_published">Godina izdanja</div>
+                <div class="detail-cell-value" id="detail-book-year">-</div>
+            </div>
+            <div class="detail-cell">
+                <div class="detail-cell-label" data-i18n="genre">Žanr</div>
+                <div class="detail-cell-value" id="detail-book-genre">-</div>
+            </div>
+            <div class="detail-cell">
+                <div class="detail-cell-label" data-i18n="language_label">Jezik</div>
+                <div class="detail-cell-value" id="detail-book-lang">-</div>
+            </div>
+        </div>
+        <div class="detail-desc">
+            <div class="detail-cell-label" data-i18n="description">Opis</div>
+            <div class="detail-cell-value" id="detail-book-desc">-</div>
+        </div>
+
+        <div class="card-header" style="margin-bottom:10px">
             <h3 data-i18n="book_copies">Primerci</h3>
             <button class="btn btn-primary btn-sm" onclick="closeModal('book-detail-modal');openModal('new-copy-modal')" data-i18n="new_copy">+ Novi primerak</button>
         </div>
         <div class="table-container">
             <table>
                 <thead>
-                    <tr><th data-i18n="inventory_number">Inv. broj</th><th data-i18n="status_title">Status</th><th data-i18n="shelf">Polica</th><th data-i18n="condition">Stanje</th><th data-i18n="actions">Akcije</th></tr>
+                    <tr>
+                        <th data-i18n="inventory_number">Inventarni broj</th>
+                        <th data-i18n="status_title">Status</th>
+                        <th data-i18n="shelf">Polica</th>
+                        <th data-i18n="condition">Stanje</th>
+                        <th data-i18n="actions">Akcije</th>
+                    </tr>
                 </thead>
                 <tbody id="copies-tbody"></tbody>
             </table>
@@ -107,7 +88,55 @@
 
         <div class="modal-actions">
             <button class="btn btn-secondary" onclick="closeModal('book-detail-modal')" data-i18n="close">Zatvori</button>
+            <button class="btn btn-primary" onclick="openEditBookModal()" data-i18n="edit_book">Izmeni</button>
         </div>
+    </div>
+</div>
+
+<!-- Edit Book Modal -->
+<div class="modal-overlay" id="edit-book-modal">
+    <div class="modal">
+        <h2 data-i18n="edit_book_title">Izmeni knjigu</h2>
+        <form onsubmit="saveEditBook(event)">
+            <input type="hidden" id="edit-book-id">
+            <div class="form-group">
+                <label data-i18n="title">Naslov *</label>
+                <input type="text" id="edit-book-title" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label data-i18n="author">Autor *</label>
+                <input type="text" id="edit-book-author" class="form-control" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label data-i18n="publisher">Izdavač</label>
+                    <input type="text" id="edit-book-publisher" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label data-i18n="year_published">Godina</label>
+                    <input type="number" id="edit-book-year" class="form-control" min="1000" max="2100">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label data-i18n="genre">Žanr</label>
+                    <input type="text" id="edit-book-genre" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label data-i18n="language_label">Jezik</label>
+                    <input type="text" id="edit-book-lang" class="form-control">
+                </div>
+            </div>
+            <div class="form-group">
+                <label data-i18n="description">Opis</label>
+                <textarea id="edit-book-desc" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-danger" onclick="deleteBook()" data-i18n="delete_book" style="margin-right:auto">Obriši</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('edit-book-modal')" data-i18n="cancel">Otkaži</button>
+                <button type="submit" class="btn btn-primary" data-i18n="save">Sačuvaj</button>
+            </div>
+        </form>
     </div>
 </div>
 

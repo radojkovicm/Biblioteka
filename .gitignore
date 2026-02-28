@@ -1,5 +1,5 @@
 .env
-.envexample
+config/.env
 __pycache__/
 *.pyc
 *.pyo
