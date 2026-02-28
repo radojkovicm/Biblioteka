@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="app_title">Biblioteka — Prijava</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <h1>Biblioteka</h1>
+            <p class="subtitle" data-i18n="management_system">Sistem upravljanja</p>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username" data-i18n="username">Korisničko ime</label>
+                    <input type="text" id="username" class="form-control" placeholder="Unesite korisničko ime" data-i18n-placeholder="enter_username" required autofocus>
+                </div>
+                <div class="form-group">
+                    <label for="password" data-i18n="password">Lozinka</label>
+                    <input type="password" id="password" class="form-control" placeholder="Unesite lozinku" data-i18n-placeholder="enter_password" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top:8px" data-i18n="login_button">Prijavi se</button>
+            </form>
+        </div>
+    </div>
+    <script src="/static/app.js"></script>
+    <script>
+        async function initPage() {
+            await loadPublicConfig();
+            document.title = t('app_title');
+            initLoginPage();
+        }
+        
+        initPage();
+        setupActivityTracking();
+    </script>
+</body>
+</html>
+

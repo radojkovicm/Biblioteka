@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+{% block title %}Settings — Biblioteka{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 data-i18n="settings">Settings</h1>
+</div>
+
+<div class="tabs">
+    <button class="tab active" onclick="switchSettingsTab('general')" data-i18n="general">General</button>
+    <button class="tab" onclick="switchSettingsTab('email')" data-i18n="email_settings">Email</button>
+    <button class="tab" onclick="switchSettingsTab('prices')" data-i18n="pricing">Pricing</button>
+    <button class="tab" onclick="switchSettingsTab('staff')" data-i18n="users">Users</button>
+    <button class="tab" onclick="switchSettingsTab('import')" data-i18n="import_export">Import/Export</button>
+    <button class="tab" onclick="switchSettingsTab('backup')" data-i18n="backup">Backup</button>
+</div>
+
+<!-- General -->
+<div class="settings-tab active" id="stab-general">
+    <div class="card">
+        <h3 data-i18n="general">General Settings</h3>
+        <div class="form-group" style="margin-top:16px">
+            <label data-i18n="library_name">Library Name</label>
+            <input type="text" id="setting-library-name" class="form-control">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label data-i18n="loan_duration">Loan Duration (days)</label>
+                <input type="number" id="setting-loan-days" class="form-control" style="width:120px">
+            </div>
+            <div class="form-group">
+                <label data-i18n="currency">Currency</label>
+                <select id="setting-currency" class="form-control" style="width:120px">
+                    <option value="RSD">RSD - дин</option>
+                    <option value="EUR">EUR - €</option>
+                    <option value="GBP">GBP - £</option>
+                    <option value="USD">USD - $</option>
+                    <option value="BAM">BAM - KM</option>
+                    <option value="PLN">PLN - zł</option>
+                    <option value="HUF">HUF - Ft</option>
+                    <option value="CZK">CZK - Kč</option>
+                    <option value="HRK">HRK - kn</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label data-i18n="language">Language</label>
+                <select id="setting-language" class="form-control" style="width:120px">
+                    <option value="sr">Srpski</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label data-i18n="library_logo">Library Logo</label>
+            <input type="file" id="logo-upload" accept="image/*" class="form-control" style="padding:6px">
+            <button class="btn btn-secondary btn-sm" onclick="uploadLogo()" style="margin-top:8px" data-i18n="save_logo">Save Logo</button>
+        </div>
+        <button class="btn btn-primary" onclick="saveGeneralSettings()" style="margin-top:8px" data-i18n="save">Save</button>
+    </div>
+</div>
+
+<!-- Email -->
+<div class="settings-tab" id="stab-email" style="display:none">
+    <div class="card">
+        <h3 data-i18n="email_settings">Email Settings</h3>
+        <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px" data-i18n="email_description">
+            Sistem šalje automatske podetnike: rok vraćanja, kašnjenja, dostupne rezervacije, istek članarine.
+        </p>
+        <div class="form-group" style="margin-top:16px">
+            <label>
+                <input type="checkbox" id="setting-email-enabled">
+                <span data-i18n="enable_email">Enable Email Notifications</span>
+            </label>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label data-i18n="smtp_server">SMTP Server</label>
+                <input type="text" id="setting-email-host" class="form-control" placeholder="smtp.gmail.com">
+            </div>
+            <div class="form-group">
+                <label data-i18n="port">Port</label>
+                <input type="number" id="setting-email-port" class="form-control" placeholder="587">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label data-i18n="email_address">Email Address</label>
+                <input type="email" id="setting-email-user" class="form-control" placeholder="biblioteka@gmail.com">
+            </div>
+            <div class="form-group">
+                <label data-i18n="app_password">App Password</label>
+                <input type="password" id="setting-email-password" class="form-control" data-i18n-placeholder="leave_blank_for_current">
+            </div>
+        </div>
+        <div class="form-group">
+            <label data-i18n="sender_name">Sender Name</label>
+            <input type="text" id="setting-email-sender" class="form-control" placeholder="Biblioteka Novi Sad">
+        </div>
+        <div style="display:flex;gap:12px;margin-top:16px">
+            <button class="btn btn-primary" onclick="saveEmailSettings()" data-i18n="save">Save</button>
+            <button class="btn btn-secondary" onclick="testEmail()" data-i18n="test_email">Send Test Email</button>
+        </div>
+
+        <div style="margin-top:24px;padding:16px;background:var(--bg-secondary);border-radius:8px;font-size:13px;color:var(--text-secondary)">
+            <strong>Supported Services:</strong><br>
+            Gmail — smtp.gmail.com:587 (requires App Password, not regular password)<br>
+            Outlook — smtp.office365.com:587<br>
+            Hosting mail — ask provider for SMTP details
+        </div>
+    </div>
+</div>
+
+<!-- Prices -->
+<div class="settings-tab" id="stab-prices" style="display:none">
+    <div class="card">
+        <h3 id="prices-title" data-i18n="membership_prices">Membership Prices</h3>
+        <div class="form-row" style="margin-top:16px">
+            <div class="form-group">
+                <label data-i18n="djak">High School Student</label>
+                <input type="number" id="price-djak" class="form-control">
+            </div>
+            <div class="form-group">
+                <label data-i18n="student">University Student</label>
+                <input type="number" id="price-student" class="form-control">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label data-i18n="odrasli">Adult</label>
+                <input type="number" id="price-odrasli" class="form-control">
+            </div>
+            <div class="form-group">
+                <label data-i18n="penzioner">Senior</label>
+                <input type="number" id="price-penzioner" class="form-control">
+            </div>
+        </div>
+        <div class="form-group" style="max-width:calc(50% - 8px)">
+            <label data-i18n="institucija">Institution</label>
+            <input type="number" id="price-institucija" class="form-control">
+        </div>
+        <button class="btn btn-primary" onclick="savePriceSettings()" style="margin-top:8px" data-i18n="save">Save</button>
+    </div>
+</div>
+
+<!-- Staff -->
+<div class="settings-tab" id="stab-staff" style="display:none">
+    <div class="card">
+        <div class="card-header">
+            <h3 data-i18n="users">System Users</h3>
+            <button class="btn btn-primary btn-sm" onclick="openModal('new-staff-modal')" data-i18n="new_user">+ New User</button>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr><th data-i18n="staff_username">Korisničko ime</th><th data-i18n="staff_full_name">Puno ime</th><th data-i18n="staff_role">Uloga</th><th data-i18n="status_title">Status</th><th data-i18n="staff_actions">Akcije</th></tr>
+                </thead>
+                <tbody id="staff-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Import/Export -->
+<div class="settings-tab" id="stab-import" style="display:none">
+    <div class="card">
+        <h3 data-i18n="import_data">Uvoz podataka (migracija iz MS Access)</h3>
+        <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px" data-i18n="import_template_desc">
+            Preuzmite Excel šablon, popunite ga podacima iz starog sistema, pa uvezite.
+        </p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px">
+            <button class="btn btn-secondary" onclick="downloadTemplate('books')" data-i18n="template_books">Šablon: Knjige</button>
+            <button class="btn btn-secondary" onclick="downloadTemplate('members')" data-i18n="template_members">Šablon: Članovi</button>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="importFile('books')" data-i18n="import_books">Uvezi knjige (Excel)</button>
+            <button class="btn btn-primary" onclick="importFile('members')" data-i18n="import_members">Uvezi članove (Excel)</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 data-i18n="export">Izvoz</h3>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <button class="btn btn-secondary" onclick="exportReport('books')" data-i18n="export_books">Izvezi knjige (Excel)</button>
+            <button class="btn btn-secondary" onclick="exportReport('members')" data-i18n="export_members">Izvezi članove (Excel)</button>
+        </div>
+    </div>
+</div>
+
+<!-- Backup -->
+<div class="settings-tab" id="stab-backup" style="display:none">
+    <div class="card">
+        <h3 data-i18n="backup_database">Backup baze podataka</h3>
+        <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px" data-i18n="backup_info">
+            Automatski backup svake noći u ponoć. Čuva se poslednjih 7 dana.
+        </p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="backupNow()" data-i18n="backup_now">Backup sada</button>
+            <button class="btn btn-secondary" onclick="exportFullDB()" data-i18n="export_full_db">Export komplet baze (ZIP)</button>
+        </div>
+    </div>
+</div>
+
+<!-- New Staff Modal -->
+<div class="modal-overlay" id="new-staff-modal">
+    <div class="modal">
+        <h2 data-i18n="new_user_title">Novi korisnik</h2>
+        <form onsubmit="saveNewStaff(event)">
+            <div class="form-group">
+                <label data-i18n="staff_username">Korisničko ime *</label>
+                <input type="text" id="new-staff-username" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label data-i18n="staff_full_name">Puno ime *</label>
+                <input type="text" id="new-staff-name" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label data-i18n="password">Lozinka *</label>
+                <input type="password" id="new-staff-password" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="new-staff-admin">
+                    <span data-i18n="administrator">Administrator</span>
+                </label>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('new-staff-modal')" data-i18n="cancel">Otkaži</button>
+                <button type="submit" class="btn btn-primary" data-i18n="create">Kreiraj</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function switchSettingsTab(tab) {
+    document.querySelectorAll('.settings-tab').forEach(t => t.style.display = 'none');
+    document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(`stab-${tab}`).style.display = 'block';
+    event.target.classList.add('active');
+}
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script>initSettingsPage();</script>
+{% endblock %}

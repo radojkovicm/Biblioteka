@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Izveštaji — Biblioteka{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 data-i18n="reports">Izveštaji</h1>
+    <div>
+        <button class="btn btn-secondary" onclick="exportReport('books')" data-i18n="excel_books">Excel: Knjige</button>
+        <button class="btn btn-secondary" onclick="exportReport('members')" data-i18n="excel_members">Excel: Članovi</button>
+    </div>
+</div>
+
+<div class="tabs">
+    <button class="tab active" data-tab="overdue" onclick="switchReportTab('overdue')" data-i18n="overdue">Kašnjenja</button>
+    <button class="tab" data-tab="memberships" onclick="switchReportTab('memberships')" data-i18n="memberships_report">Članarine</button>
+    <button class="tab" data-tab="popular" onclick="switchReportTab('popular')" data-i18n="most_popular">Najpopularnije</button>
+    <button class="tab" data-tab="expired" onclick="switchReportTab('expired')" data-i18n="expired_memberships">Istekle članarine</button>
+</div>
+
+<!-- Overdue Tab -->
+<div class="tab-content active" id="tab-overdue">
+    <div class="card">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr><th data-i18n="book_title">Knjiga</th><th data-i18n="inventory_number">Inv. broj</th><th data-i18n="members">Član</th><th data-i18n="member_number_title">Br. člana</th><th data-i18n="due_date">Rok</th><th data-i18n="overdue_days">Kašnjenje</th></tr>
+                </thead>
+                <tbody id="overdue-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Memberships Tab -->
+<div class="tab-content" id="tab-memberships">
+    <div class="card">
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px">
+            <input type="number" id="report-year" class="form-control" style="width:120px" data-i18n-placeholder="year_placeholder" placeholder="Godina" value="2026">
+            <button class="btn btn-primary btn-sm" onclick="loadMembershipReport()" data-i18n="show">Prikaži</button>
+            <span id="membership-total" style="margin-left:auto;font-weight:700"></span>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr><th data-i18n="members">Član</th><th data-i18n="member_number_title">Br. člana</th><th data-i18n="member_type_title">Tip</th><th data-i18n="amount">Iznos</th><th data-i18n="payment_date">Datum uplate</th></tr>
+                </thead>
+                <tbody id="membership-report-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Popular Books Tab -->
+<div class="tab-content" id="tab-popular">
+    <div class="card">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr><th data-i18n="number">#</th><th data-i18n="title">Naslov</th><th data-i18n="author">Autor</th><th data-i18n="loans">Pozajmice</th></tr>
+                </thead>
+                <tbody id="popular-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Expired Memberships Tab -->
+<div class="tab-content" id="tab-expired">
+    <div class="card">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr><th data-i18n="members">Član</th><th data-i18n="member_number_title">Br. člana</th><th data-i18n="member_type_title">Tip</th><th data-i18n="email_title">Email</th><th data-i18n="last_membership">Poslednja članarina</th></tr>
+                </thead>
+                <tbody id="expired-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>initReportsPage();</script>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Biblioteka{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 data-i18n="dashboard">Dashboard</h1>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-number" id="stat-loans">-</div>
+        <div class="stat-label" data-i18n="active_loans">Aktivne pozajmice</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number" id="stat-expired">-</div>
+        <div class="stat-label" data-i18n="expired_memberships">Istekle članarine</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number" id="stat-reservations">-</div>
+        <div class="stat-label" data-i18n="pending_reservations">Čekaju rezervacije</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number" id="stat-books">-</div>
+        <div class="stat-label" data-i18n="total_copies">Ukupno primeraka</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 data-i18n="recent_activity">Poslednje aktivnosti</h3>
+    </div>
+    <ul class="activity-feed" id="activity-feed">
+        <li class="empty-state">Učitavanje...</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>initDashboard();</script>
+{% endblock %}
