@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.staff import Staff
+from app.models.user_permission import UserPermission
 from app.schemas.auth import LoginRequest, LoginResponse, StaffCreate, StaffUpdate, StaffOut
 from app.utils.auth import (
     verify_password, hash_password, create_access_token,
@@ -52,6 +53,20 @@ def logout(request: Request, response: Response, current_user: Staff = Depends(g
 @router.get("/me", response_model=StaffOut)
 def me(current_user: Staff = Depends(get_current_user)):
     return current_user
+
+
+@router.get("/me/permissions")
+def my_permissions(current_user: Staff = Depends(get_current_user), db: Session = Depends(get_db)):
+    if current_user.is_admin:
+        return {"is_admin": True, "permissions": []}
+    perms = db.query(UserPermission).filter(UserPermission.user_id == current_user.id).all()
+    return {
+        "is_admin": False,
+        "permissions": [
+            {"module": p.module, "can_read": p.can_read, "can_write": p.can_write}
+            for p in perms
+        ],
+    }
 
 
 @router.get("/config")

@@ -379,8 +379,10 @@
 function switchSettingsTab(tab) {
     document.querySelectorAll('.settings-tab').forEach(t => t.style.display = 'none');
     document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
-    document.getElementById(`stab-${tab}`).style.display = 'block';
-    event.target.classList.add('active');
+    const tabDiv = document.getElementById(`stab-${tab}`);
+    if (tabDiv) tabDiv.style.display = 'block';
+    const btn = (typeof event !== 'undefined' && event && event.target) || document.querySelector(`.tabs .tab[onclick*="'${tab}'"]`);
+    if (btn) btn.classList.add('active');
     if (tab === 'permissions' && typeof loadPermissionsTab === 'function') loadPermissionsTab();
 }
 </script>

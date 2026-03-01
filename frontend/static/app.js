@@ -165,6 +165,57 @@ function requireAuth() {
     return true;
 }
 
+// --- User permission helpers ---
+window._userPerms = {};
+
+async function loadUserPermissions() {
+    const user = getUser();
+    if (!user || user.is_admin) return; // admins have full access
+    try {
+        const res = await apiFetch('/auth/me/permissions');
+        if (!res.ok) return;
+        const data = await res.json();
+        window._userPerms = {};
+        (data.permissions || []).forEach(p => {
+            window._userPerms[p.module] = { read: p.can_read, write: p.can_write };
+        });
+    } catch (e) {}
+}
+
+function hasModuleAccess(module, write = false) {
+    const user = getUser();
+    if (!user) return false;
+    if (user.is_admin) return true;
+    const perm = window._userPerms[module];
+    if (!perm || !perm.read) return false;
+    if (write) return !!perm.write;
+    return true;
+}
+
+async function applyNavPermissions() {
+    await loadUserPermissions();
+    const user = getUser();
+    if (!user || user.is_admin) return;
+
+    const MODULE_LINKS = {
+        books: '/knjige',
+        members: '/clanovi',
+        reservations: '/rezervacije',
+        reports: '/izvestaji',
+    };
+    Object.entries(MODULE_LINKS).forEach(([module, href]) => {
+        if (!hasModuleAccess(module)) {
+            const link = document.querySelector(`.sidebar-nav a[href="${href}"]`);
+            if (link) link.style.display = 'none';
+        }
+    });
+    // Settings: visible if user has settings.read OR books.write
+    if (!hasModuleAccess('settings') && !hasModuleAccess('books', true)) {
+        const link = document.querySelector('.sidebar-nav a[href="/podesavanja"]');
+        if (link) link.style.display = 'none';
+    }
+}
+
 // Track user activity (only when logged in)
 function setupActivityTracking() {
     document.addEventListener('mousemove', resetSessionTimer, true);
@@ -252,6 +303,9 @@ function initSidebar() {
     document.querySelectorAll('.sidebar-nav a').forEach(a => {
         if (a.getAttribute('href') === path) a.classList.add('active');
     });
+
+    // Apply per-user nav permissions (async, non-blocking)
+    if (!user.is_admin) applyNavPermissions();
 
     // Load library name/logo
     apiFetch('/settings').then(r => r.json()).then(s => {
@@ -1124,25 +1178,46 @@ async function exportReport(type) {
 // ============================================================
 async function initSettingsPage() {
     if (!requireAuth()) return;
-    await loadPublicConfig();  // Load language/config before rendering
-    initI18n();  // Apply translations to page
+    await loadPublicConfig();
+    initI18n();
     initSidebar();
-    
-    // Hide admin-only tabs for non-admin users
+
     const user = getUser();
-    if (!user || !user.is_admin) {
-        // Hide admin-only tabs
-        const tabs = ['prices', 'import', 'backup', 'permissions'];
-        tabs.forEach(tab => {
-            const btn = document.querySelector(`[onclick="switchSettingsTab('${tab}')"]`);
-            const div = document.getElementById(`stab-${tab}`);
-            if (btn) btn.style.display = 'none';
-            if (div) div.style.display = 'none';
-        });
+    if (!user) return;
+
+    if (!user.is_admin) {
+        await loadUserPermissions();
+        const hasSettingsRead = hasModuleAccess('settings');
+        const hasBooksWrite = hasModuleAccess('books', true);
+
+        if (!hasSettingsRead && !hasBooksWrite) {
+            // No relevant access → redirect
+            window.location.href = '/dashboard';
+            return;
+        }
+
+        if (!hasSettingsRead && hasBooksWrite) {
+            // Only nova knjiga access → hide all tabs except books
+            ['general', 'permissions', 'email', 'prices', 'staff', 'import', 'backup'].forEach(tab => {
+                const btn = document.querySelector(`[onclick="switchSettingsTab('${tab}')"]`);
+                const div = document.getElementById(`stab-${tab}`);
+                if (btn) btn.style.display = 'none';
+                if (div) div.style.display = 'none';
+            });
+            switchSettingsTab('books');
+        } else {
+            // Has settings.read → hide admin-only tabs
+            ['prices', 'import', 'backup', 'permissions'].forEach(tab => {
+                const btn = document.querySelector(`[onclick="switchSettingsTab('${tab}')"]`);
+                const div = document.getElementById(`stab-${tab}`);
+                if (btn) btn.style.display = 'none';
+                if (div) div.style.display = 'none';
+            });
+        }
     }
-    
+
     loadSettings();
-    loadStaffList();
+    if (user.is_admin) loadStaffList();
 }
 
 async function loadSettings() {
